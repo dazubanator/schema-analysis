@@ -12,6 +12,13 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(ROOT, 'data', 'arm_angle')
 RAW_DIR = os.path.join(DATA_DIR, 'raw')
 RESULTS_DIR = os.path.join(ROOT, 'results', 'arm_angle')
+READOUT_ARM_COLOR = '#FD8164'
+MANIPULATED_ARM_COLOR = '#1996FC'
+
+def save_plot_png_and_svg(path_png, dpi=200):
+    plt.savefig(path_png, dpi=dpi)
+    path_svg = os.path.splitext(path_png)[0] + '.svg'
+    plt.savefig(path_svg)
 
 def load_events(events_file):
     events = []
@@ -96,7 +103,7 @@ def process_subject(subject, wav_file, events_file, calib_angles):
         
     os.makedirs(os.path.join(RESULTS_DIR, subject), exist_ok=True)
     
-    def plot_phase(title, t_start=None, t_end=None, filename="plot.png", annotate_vib=False):
+    def plot_phase(title, t_start=None, t_end=None, filename="plot.png"):
         plt.figure(figsize=(12, 6))
         
         if t_start is not None and t_end is not None:
@@ -109,46 +116,22 @@ def process_subject(subject, wav_file, events_file, calib_angles):
             plot_ch0 = ch0_angles
             plot_ch1 = ch1_angles
             
-        plt.plot(plot_times, plot_ch0, label='Manipulated Arm', color='#4C72B0')
-        plt.plot(plot_times, plot_ch1, label='Subject Matching Arm', color='#55A868')
+        plt.plot(plot_times, plot_ch0, label='Manipulated Arm', color=MANIPULATED_ARM_COLOR)
+        plt.plot(plot_times, plot_ch1, label='Subject Matching Arm', color=READOUT_ARM_COLOR)
         
-        for m, t in events:
-            if (t_start is None or t_start - 10 <= t <= t_end + 10):
-                color = 'gray'
-                if m == '9': color = 'red'
-                elif m == '8': color = 'orange'
-                elif m == '7': color = 'green'
-                plt.axvline(x=t, color=color, linestyle='--', alpha=0.5)
-                plt.text(t, plt.ylim()[1]*0.95, m, rotation=90, color=color, verticalalignment='top')
-                
-        if annotate_vib and t_start is not None and t_end is not None:
-            mask_vib = (times >= t_start) & (times <= t_end)
-            ch0_vib = ch0_angles[mask_vib]
-            ch1_vib = ch1_angles[mask_vib]
-            t_vib = times[mask_vib]
-            
-            if len(ch0_vib) > 0:
-                peak0 = np.max(ch0_vib)
-                peak1 = np.max(ch1_vib)
-                
-                t_peak0 = t_vib[np.argmax(ch0_vib)]
-                t_peak1 = t_vib[np.argmax(ch1_vib)]
-                
-                vel0 = (peak0 - ch0_vib[0]) / (t_peak0 - t_start) if t_peak0 > t_start else 0
-                vel1 = (peak1 - ch1_vib[0]) / (t_peak1 - t_start) if t_peak1 > t_start else 0
-                
-                info = (f"Manipulated Arm: Max={peak0:.1f}°, Vel={vel0:.2f}°/s\n"
-                        f"Subject Matching Arm: Max={peak1:.1f}°, Vel={vel1:.2f}°/s")
-                plt.annotate(info, xy=(0.02, 0.85), xycoords='axes fraction', 
-                             bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", alpha=0.8))
+        if t_start is not None and t_end is not None:
+            plt.axvline(x=t_start, color='black', linestyle='--', alpha=0.35)
+            plt.axvline(x=t_end, color='black', linestyle='--', alpha=0.35)
                 
         plt.title(title)
         plt.xlabel("Time (s)")
         plt.ylabel("Angle (Degrees)")
-        plt.legend(loc='upper right')
-        plt.grid(True, alpha=0.3)
+        plt.legend(loc='upper right', frameon=False)
+        ax = plt.gca()
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         plt.tight_layout()
-        plt.savefig(os.path.join(RESULTS_DIR, subject, filename), dpi=200)
+        save_plot_png_and_svg(os.path.join(RESULTS_DIR, subject, filename), dpi=200)
         plt.close()
 
     plot_phase(f"Overall Experiment - {subject}", filename="1_overall.png")
@@ -157,7 +140,7 @@ def process_subject(subject, wav_file, events_file, calib_angles):
         plot_phase(f"Follow Me Phase - {subject}", t_start=t_follow_start, t_end=t_follow_end, filename="2_follow_me.png")
     
     if t_vib_start and t_vib_end:
-        plot_phase(f"Vibration Phase - {subject}", t_start=t_vib_start, t_end=t_vib_end, filename="3_vibration.png", annotate_vib=True)
+        plot_phase(f"Vibration Phase - {subject}", t_start=t_vib_start, t_end=t_vib_end, filename="3_vibration.png")
         
     print(f"  Saved graphs for {subject}")
 

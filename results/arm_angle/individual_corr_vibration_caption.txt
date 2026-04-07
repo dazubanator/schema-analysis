@@ -1,7 +1,7 @@
 Figure: Subject-Level Variance in Sensor Coordination During the Vibration Phase.
 
-This figure isolates and illustrates the individual variance in the Pearson Correlation Coefficient (r) for the 7 participants during the independent "Vibration" phase (illusory drift). 
+This figure shows individual variance in Pearson Correlation Coefficient (r) for the 7 participants during the Vibration phase (illusory drift).
 
-Consistent with the associated analysis, the correlation was calculated exclusively over the T=10s to T=25s measurement window to capture the fully engaged illusion. The x-axis identifies the individual subject, and the y-axis traces their respective Pearson r value. 
+Consistent with the main comparison analysis, signals were time-aligned by bounded cross-correlation (maximum lag 2.5 s), and correlation was calculated in the 10-25 s window. The x-axis identifies each participant and the y-axis shows their Pearson r value.
 
-The broad intra-subject variance and stark drop in correlation magnitude directly contrasts with the "Follow Me" baseline, highlighting the presence of robust individual susceptibility gradients to the kinesthetic illusion (as the tracking arm physically displaces independent of the pinned, stationary vibrated arm). The red dashed line denotes the group mean.
+The broad intra-subject variance and lower correlation magnitudes relative to Follow Me indicate heterogeneous susceptibility to the kinesthetic illusion. The red dashed line denotes the group mean.

@@ -1,0 +1,7 @@
+Figure: Group Average Arm Displacement During the Follow Me Phase.
+
+This figure shows absolute arm displacement trajectories for both arms during the Follow Me phase in the high-vividness cohort (N=7).
+
+Time is aligned to Follow Me onset (T=0), and each arm is baseline-referenced at T=0 before taking absolute magnitude in degrees.
+
+The blue line (#1996FC) represents the Manipulated Arm (Sensor 1), and the orange line (#FD8164) represents the Subject Matching Arm (Sensor 2). Solid lines denote group means and shaded regions denote SEM.

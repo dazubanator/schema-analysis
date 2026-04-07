@@ -13,6 +13,13 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(ROOT, 'data', 'arm_angle')
 RAW_DIR = os.path.join(DATA_DIR, 'raw')
 RESULTS_DIR = os.path.join(ROOT, 'results', 'arm_angle')
+READOUT_ARM_COLOR = '#FD8164'
+MANIPULATED_ARM_COLOR = '#1996FC'
+
+def save_plot_png_and_svg(path_png, dpi=200):
+    plt.savefig(path_png, dpi=dpi)
+    path_svg = os.path.splitext(path_png)[0] + '.svg'
+    plt.savefig(path_svg)
 
 def load_events(events_file):
     events = []
@@ -38,6 +45,20 @@ def get_voltage_at_time(data, sample_rate, time_s, window_s=0.2):
         return np.median(snippet), np.median(snippet)
     else:
         return np.median(snippet[:, 0]), np.median(snippet[:, 1])
+
+def get_best_lag_samples(c0, c1, sample_rate, max_lag_s=2.5):
+    """Return bounded cross-correlation lag (in samples) maximizing alignment."""
+    corr = signal.correlate(c0 - np.mean(c0), c1 - np.mean(c1), mode='full')
+    lags = signal.correlation_lags(len(c0), len(c1), mode='full')
+    max_lag_samples = int(max_lag_s * sample_rate)
+    valid_mask = (lags >= -max_lag_samples) & (lags <= max_lag_samples)
+
+    if not np.any(valid_mask):
+        return 0
+
+    valid_lags = lags[valid_mask]
+    valid_corr = corr[valid_mask]
+    return valid_lags[np.argmax(valid_corr)]
 
 def process_subject(subject, wav_file, events_file, calib_angles):
     sample_rate, data = wavfile.read(wav_file)
@@ -88,6 +109,7 @@ def process_subject(subject, wav_file, events_file, calib_angles):
     t_grid = np.linspace(-1, 25, num=2600)
     
     follow_err = None
+    follow_dual = None
     vib_err = None
     r_follow = np.nan
     r_vib = np.nan
@@ -102,20 +124,8 @@ def process_subject(subject, wav_file, events_file, calib_angles):
             c0 = ch0_angles[mask]
             c1 = ch1_angles[mask]
             
-            # Find optimal lag using cross-correlation 
-            # to adjust for natural human tracking reflex delay
-            corr = signal.correlate(c0 - np.mean(c0), c1 - np.mean(c1), mode='full')
-            lags = signal.correlation_lags(len(c0), len(c1), mode='full')
-            
-            # Constrain lag to max 2.5 seconds
-            max_lag_samples = int(2.5 * sample_rate)
-            valid_mask = (lags >= -max_lag_samples) & (lags <= max_lag_samples)
-            
-            best_lag = 0
-            if np.any(valid_mask):
-                valid_lags = lags[valid_mask]
-                valid_corr = corr[valid_mask]
-                best_lag = valid_lags[np.argmax(valid_corr)]
+            # Find optimal lag using bounded cross-correlation.
+            best_lag = get_best_lag_samples(c0, c1, sample_rate, max_lag_s=2.5)
                 
             # Shift the entire signals by best_lag for purely time-aligned error calculation
             if best_lag > 0:
@@ -144,18 +154,43 @@ def process_subject(subject, wav_file, events_file, calib_angles):
             if t0 - 1 >= 0 and t0 + 25 <= t_eff[-1]:
                 rel_times = t_eff - t0
                 follow_err = np.interp(t_grid, rel_times, aligned_error)
+                c0_zeroed = c0_eff - np.interp(0, rel_times, c0_eff)
+                c1_zeroed = c1_eff - np.interp(0, rel_times, c1_eff)
+                follow_track = np.interp(t_grid, rel_times, np.abs(c1_zeroed))
+                follow_stat = np.interp(t_grid, rel_times, np.abs(c0_zeroed))
+                follow_dual = (follow_track, follow_stat)
 
     if len(vib_markers) >= 2:
         t0 = vib_markers[0]
         t1 = vib_markers[1]
         
-        # 10 to 25s window for vibration correlation
-        mask_corr = (times >= t0 + 10) & (times <= min(t0 + 25, t1))
-        if np.sum(mask_corr) > 10:
-            c0 = ch0_angles[mask_corr]
-            c1 = ch1_angles[mask_corr]
-            if np.std(c0) > 0 and np.std(c1) > 0:
-                r_vib = np.corrcoef(c0, c1)[0, 1]
+        # Use the same lag-alignment approach as Follow Me for symmetry.
+        mask = (times >= t0) & (times <= t1)
+        if np.sum(mask) > 10:
+            c0 = ch0_angles[mask]
+            c1 = ch1_angles[mask]
+            best_lag = get_best_lag_samples(c0, c1, sample_rate, max_lag_s=2.5)
+
+            if best_lag > 0:
+                c0_eff = ch0_angles[best_lag:]
+                c1_eff = ch1_angles[:-best_lag]
+                t_eff = times[best_lag:]
+            elif best_lag < 0:
+                c0_eff = ch0_angles[:best_lag]
+                c1_eff = ch1_angles[-best_lag:]
+                t_eff = times[-best_lag:]
+            else:
+                c0_eff = ch0_angles
+                c1_eff = ch1_angles
+                t_eff = times
+
+            # 10 to 25s window for vibration correlation (aligned signals)
+            mask_eff = (t_eff >= t0 + 10) & (t_eff <= min(t0 + 25, t1))
+            if np.sum(mask_eff) > 10:
+                c0_aligned = c0_eff[mask_eff]
+                c1_aligned = c1_eff[mask_eff]
+                if np.std(c0_aligned) > 0 and np.std(c1_aligned) > 0:
+                    r_vib = np.corrcoef(c0_aligned, c1_aligned)[0, 1]
                 
         if t0 - 1 >= 0 and t0 + 25 <= times[-1]:
             rel_times = times - t0
@@ -172,7 +207,7 @@ def process_subject(subject, wav_file, events_file, calib_angles):
             stat_err = np.interp(t_grid, rel_times, stat_series)
             vib_err = (track_err, stat_err)
 
-    return follow_err, vib_err, r_follow, r_vib
+    return follow_err, follow_dual, vib_err, r_follow, r_vib
 
 def run_group_analysis():
     print("Starting Group Arm Angle Analysis...")
@@ -189,6 +224,8 @@ def run_group_analysis():
     wav_files = glob.glob(os.path.join(RAW_DIR, "*.wav"))
     
     all_follow = []
+    all_follow_track = []
+    all_follow_stat = []
     all_vib_track = []
     all_vib_stat = []
     corr_follow = []
@@ -215,8 +252,11 @@ def run_group_analysis():
                         calib_angles = [float(a) if a is not None else np.nan for a in info.get('angles', [])]
                         res = process_subject(subject, wav_file, events_file, calib_angles)
                         if res is not None:
-                            f_err, v_err, r_f, r_v = res
+                            f_err, f_dual, v_err, r_f, r_v = res
                             if f_err is not None: all_follow.append(f_err)
+                            if f_dual is not None:
+                                all_follow_track.append(f_dual[0])
+                                all_follow_stat.append(f_dual[1])
                             if v_err is not None:
                                 all_vib_track.append(v_err[0])
                                 all_vib_stat.append(v_err[1])
@@ -231,6 +271,11 @@ def run_group_analysis():
     
     t_grid = np.linspace(-1, 25, num=2600)
     
+    def style_axes():
+        ax = plt.gca()
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+
     def plot_group(data_list, title, ylabel, filename):
         if not data_list:
             print(f"No data for {title}")
@@ -249,11 +294,11 @@ def run_group_analysis():
         plt.title(title, fontsize=14, fontweight='bold')
         plt.xlabel("Time (s)", fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
-        plt.legend()
-        plt.grid(True, alpha=0.3)
+        plt.legend(frameon=False)
+        style_axes()
         plt.tight_layout()
         save_path = os.path.join(RESULTS_DIR, filename)
-        plt.savefig(save_path, dpi=200)
+        save_plot_png_and_svg(save_path, dpi=200)
         plt.close()
         print(f"Saved {save_path} (N={len(data_list)})")
         
@@ -271,25 +316,26 @@ def run_group_analysis():
         
         plt.figure(figsize=(10, 6))
         # Tracking arm
-        plt.plot(t_grid, t_mean, color='#C44E52', linewidth=2, label='Subject Matching Arm (Physical Movement)')
-        plt.fill_between(t_grid, t_mean - t_err, t_mean + t_err, color='#C44E52', alpha=0.3)
+        plt.plot(t_grid, t_mean, color=READOUT_ARM_COLOR, linewidth=2, label='Subject Matching Arm (Physical Movement)')
+        plt.fill_between(t_grid, t_mean - t_err, t_mean + t_err, color=READOUT_ARM_COLOR, alpha=0.3)
         # Stationary arm
-        plt.plot(t_grid, s_mean, color='#4C72B0', linewidth=2, label='Manipulated Arm (Stationary)')
-        plt.fill_between(t_grid, s_mean - s_err, s_mean + s_err, color='#4C72B0', alpha=0.3)
+        plt.plot(t_grid, s_mean, color=MANIPULATED_ARM_COLOR, linewidth=2, label='Manipulated Arm (Stationary)')
+        plt.fill_between(t_grid, s_mean - s_err, s_mean + s_err, color=MANIPULATED_ARM_COLOR, alpha=0.3)
         
         plt.axvline(0, color='black', linestyle='--', alpha=0.6, label='Stimulation Start')
         plt.title(title, fontsize=14, fontweight='bold')
         plt.xlabel("Time (s)", fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
-        plt.legend()
-        plt.grid(True, alpha=0.3)
+        plt.legend(frameon=False)
+        style_axes()
         plt.tight_layout()
         save_path = os.path.join(RESULTS_DIR, filename)
-        plt.savefig(save_path, dpi=200)
+        save_plot_png_and_svg(save_path, dpi=200)
         plt.close()
         print(f"Saved {save_path} (N={len(track_list)})")
         
     plot_group(all_follow, "Group Average 'Follow Me' Tracking Error (High Vividness)", "Absolute Arm Difference (Degrees)", "group_follow_me.png")
+    plot_group_dual(all_follow_track, all_follow_stat, "Group Average Arm Displacement (Follow Me Phase)", "Absolute Angular Magnitude (Degrees)", "group_follow_me_dual.png")
     plot_group_dual(all_vib_track, all_vib_stat, "Group Average Illusion Drift (Vibration Phase)", "Absolute Displacement From Baseline (Degrees)", "group_vibration.png")
     
     # Plot correlation bar chart
@@ -302,60 +348,51 @@ def run_group_analysis():
         means = [np.mean(corr_follow), np.mean(corr_vib)]
         errs = [sem(corr_follow), sem(corr_vib)]
         
-        bars = plt.bar(['Follow Me Phase\n(10-25s Window)', 'Vibration Phase\n(10-25s Window)'], means, yerr=errs, capsize=10, color=['#4C72B0', '#C44E52'])
+        bars = plt.bar(['Follow Me Phase\n(10-25s Window)', 'Vibration Phase\n(10-25s Window)'], means, yerr=errs, capsize=10, color=['black', 'black'])
         plt.axhline(0, color='black', linewidth=1)
         plt.ylim(-0.5, 1.2)
         plt.ylabel("Pearson Correlation Coefficient (r)")
         plt.title("Sensor Coordination: Follow Me vs. Vibration", fontweight='bold')
         
-        # Add N above bars
-        plt.text(0, means[0] + errs[0] + 0.05, f"N={len(corr_follow)}", ha='center')
-        plt.text(1, means[1] + errs[1] + 0.05, f"N={len(corr_vib)}", ha='center')
-        
-        # Add significance bracket
-        h = max(means[0] + errs[0], means[1] + errs[1]) + 0.15
-        asterisks = "***" if p_val < 0.001 else "**" if p_val < 0.01 else "*" if p_val < 0.05 else "ns"
-        plt.plot([0, 0, 1, 1], [h-0.05, h, h, h-0.05], lw=1.5, c='black')
-        plt.text(0.5, h + 0.02, f"p = {p_val:.4f} {asterisks}", ha='center', va='bottom', color='black', fontweight='bold')
-        
-        plt.grid(axis='y', alpha=0.3)
+        plt.text(0.5, 1.13, f"paired t-test p = {p_val:.4f}", transform=plt.gca().transAxes, ha='center')
+        style_axes()
         plt.tight_layout()
         save_path = os.path.join(RESULTS_DIR, "group_correlation.png")
-        plt.savefig(save_path, dpi=200)
+        save_plot_png_and_svg(save_path, dpi=200)
         plt.close()
         print(f"Saved {save_path}")
         
     if subject_names:
         # 1. Individual Plot for Follow Me
         plt.figure(figsize=(10, 6))
-        plt.bar(subject_names, corr_follow, color='#4C72B0')
+        plt.bar(subject_names, corr_follow, color='black')
         plt.axhline(0, color='black', linewidth=1)
         plt.axhline(np.mean(corr_follow), color='r', linestyle='--', label=f'Mean (r={np.mean(corr_follow):.2f})')
         plt.ylim(-1.0, 1.1)
         plt.ylabel("Pearson Correlation Coefficient (r)")
         plt.title("Individual Sensor Coordination: Follow Me Phase (10-25s)", fontweight='bold')
         plt.xticks(rotation=45, ha='right')
-        plt.legend()
-        plt.grid(axis='y', alpha=0.3)
+        plt.legend(frameon=False)
+        style_axes()
         plt.tight_layout()
         save_path_f = os.path.join(RESULTS_DIR, "individual_corr_follow.png")
-        plt.savefig(save_path_f, dpi=200)
+        save_plot_png_and_svg(save_path_f, dpi=200)
         plt.close()
         
         # 2. Individual Plot for Vibration
         plt.figure(figsize=(10, 6))
-        plt.bar(subject_names, corr_vib, color='#C44E52')
+        plt.bar(subject_names, corr_vib, color='black')
         plt.axhline(0, color='black', linewidth=1)
         plt.axhline(np.mean(corr_vib), color='r', linestyle='--', label=f'Mean (r={np.mean(corr_vib):.2f})')
         plt.ylim(-1.0, 1.1)
         plt.ylabel("Pearson Correlation Coefficient (r)")
         plt.title("Individual Sensor Coordination: Vibration Phase (10-25s)", fontweight='bold')
         plt.xticks(rotation=45, ha='right')
-        plt.legend()
-        plt.grid(axis='y', alpha=0.3)
+        plt.legend(frameon=False)
+        style_axes()
         plt.tight_layout()
         save_path_v = os.path.join(RESULTS_DIR, "individual_corr_vibration.png")
-        plt.savefig(save_path_v, dpi=200)
+        save_plot_png_and_svg(save_path_v, dpi=200)
         plt.close()
         print(f"Saved Individual plots")
 

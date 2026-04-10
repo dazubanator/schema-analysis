@@ -1,0 +1,159 @@
+================================================================================
+DRAFT — Aligned with current analysis scripts (tube_analysis.py,
+within_subject_exp2.py). Exp 2 threat analysis: ID015 (low) vs ID017 (high);
+ID030 excluded from main figures. Angle validity: 3 deg < tilt < 40 deg;
+cascade balancing of toward/away pairs; behavioral bot screening optional
+(BOT_CLEAN = True in tube_analysis.py).
+================================================================================
+
+ABSTRACT
+--------
+
+People appear to treat others' gaze as if it exerts a small physical influence
+on nearby objects. Prior work used an online tube-tipping task to show a
+directional bias when a face was visible versus blindfolded. We replicated that
+core pattern in a large online sample (Experiment 1). In Experiment 2 we asked
+whether perceived facial threat modulates the same directional measure (D =
+mean tilt toward the face minus mean tilt away), using two face identities
+rated low versus high on perceived threat (ID015 vs ID017). Data were cleaned
+with explicit worker quarantine (repeat submissions), trial angle filters, and
+pairwise cascade invalidation so D is computed from symmetric toward/away
+trials. Between-subject one-sample tests of D against zero showed no reliable
+bias for either face at conventional levels; a within-subject paired analysis
+(N = 249 participants with complete data for both faces) likewise found no
+significant difference between high- and low-threat faces on D. These results
+do not support a simple hypothesis that higher perceived threat strengthens the
+gaze-related tilt bias in this paradigm, though they leave open more nuanced
+accounts (e.g., individual differences, cutoff sensitivity, or factors other
+than threat).
+
+
+BACKGROUND
+----------
+
+Empirical vision science treats the eyes as receptors, yet people often feel
+"watched" even when the glance could not geometrically reach them. Guterstam et
+al. (2019) reported that, in a virtual tube-tipping task, visible faces biased
+participants' judgments of the tipping point relative to the same face shown
+blindfolded---as if gaze imparted a small force. That work framed the effect as
+a socially grounded misapplication of physical intuition rather than a belief
+in literal "eye rays."
+
+The present project extends that question by asking whether perceived social
+threat---operationalized by varying face identity with independent threat
+ratings---amplifies the same directional bias. The core prediction would be a
+larger toward-minus-away difference (D) for higher-threat than lower-threat
+faces, holding tube geometry and task structure constant. Experiment 1 was
+included to verify replication of the sighted-versus-blindfold dissociation at
+scale before interpreting threat manipulations in Experiment 2.
+
+
+METHODS
+-------
+
+Participants. Adults were recruited via Amazon Mechanical Turk. Experiment 1
+used portrait stimuli of a single identity under sighted versus blindfold
+conditions. Experiment 2 used separate face identities selected for low versus
+high perceived threat (ID015 vs ID017). The main analysis pipeline excludes a
+third high-threat face (ID030) used in broader data collection, so reported
+threat contrasts are restricted to ID015 and ID017.
+
+Task. On each trial, participants judged the tipping point of a paper tube
+shown in short video-style presentation. Trials varied tube type, tip
+direction, and lateral placement of the face relative to the table. In
+Experiment 2, face identity carried the threat manipulation.
+
+Data handling (current scripts). Raw submissions were organized with a file-level
+quarantine that removes repeat workers (more than one session per workerId).
+Primary loading merges Experiment 2 JSON archives (post-quarantine user-data)
+with a legacy CSV (run 1) keyed consistently for participant identity.
+Sessions flagged by behavioral bot heuristics were removed before analysis.
+Trials were marked valid if recorded tilt magnitude satisfied 3 deg < angle <
+40 deg (exclusive bounds). A single-pass cascade then invalidated the paired
+toward/away partner whenever one member of the pair failed validity, so per-participant D is never computed from asymmetric pair loss. The primary outcome
+D was computed per participant as mean angle on toward trials minus mean angle
+on away trials (sign convention as implemented in code).
+
+Experiment 1 analysis. One-sample t-tests of each participant's D against zero
+for Eyes Open versus Eyes Covered.
+
+Experiment 2 analysis. (i) Between-subject reference: separate one-sample t-tests
+of D against zero for each face identity, including all participants with usable
+data for that face after filtering (ID015: N = 256; ID017: N = 254 in the
+current run). (ii) Within-subject / paired analysis: restrict to participants
+who have valid toward and away data for both ID015 and ID017 (N = 249); repeat
+one-sample tests of D vs zero at each face on this matched sample, and a paired
+t-test of the difference D_ID017 - D_ID015. All tests are two-tailed; error bars
+on figures denote standard error of the mean unless noted otherwise.
+
+
+FINDINGS
+--------
+
+Experiment 1 (replication). With the current cleaning pipeline, Experiment 1
+yields a pattern consistent with the original double dissociation: Eyes Open
+participants show a small but statistically reliable positive D (N = 577,
+D = +0.237 deg, SE = 0.114, p = 0.039), whereas Eyes Covered does not (N = 579,
+D = +0.011 deg, SE = 0.110, p = 0.921). The absolute magnitude of D in Eyes
+Open is modest and smaller than some published benchmarks, but the qualitative
+contrast with the blindfold condition is clear under these analysis rules.
+
+Experiment 2 (threat faces, ID015 vs ID017). Between-subject one-sample tests
+on the full per-face samples are not significant for either identity: ID015
+N = 256, D = -0.024 deg, SE = 0.199, p = 0.904; ID017 N = 254, D = +0.157 deg,
+SE = 0.205, p = 0.447. The numerical ordering (somewhat higher D for the
+higher-rated threat face) does not reach conventional significance and the
+low-threat mean is very close to zero.
+
+Within-subject sample: same participants for both faces; N = 249.
+
+POSTER — Experiment 2: within-subject analyses (copy/paste friendly)
+--------------------------------------------------------------------
+• Sample: N = 249 (valid toward/away data for both ID015 and ID017).
+
+• (1) EACH FACE VS. ZERO — one-sample t-tests on D (matched sample)
+      ID015: D = -0.036 deg, SE = 0.200, p = 0.857
+      ID017: D = +0.114 deg, SE = 0.201, p = 0.574
+      Takeaway: no reliable bias vs. zero for either face.
+
+• (2) DIRECT CONTRAST — ID017 vs ID015 within person
+      Difference score: D_ID017 - D_ID015 per participant.
+      Test: paired t(248); same inference as one-sample t on those differences
+            (H0: mean paired difference = 0).
+      Mean diff = +0.150 deg, SE = 0.270, t = 0.554, p = 0.580
+      Takeaway: small, non-significant high- minus low-threat contrast.
+
+(Long-form sentence version for manuscript: On the intersection sample,
+one-sample tests of D vs. zero were non-significant for ID015 and ID017;
+the paired contrast D_ID017 - D_ID015 was likewise non-significant.)
+
+The reduction from the per-face unpaired Ns (256 and 254) to the paired N of 249
+reflects a small number of participants who lack usable toward-and-away data for
+one face or the other after the same filtering rules; those individuals are
+excluded from paired inference but retained in the single-face between-subject
+counts where applicable.
+
+
+CONCLUSION
+----------
+
+In the current preregistered-style pipeline, Experiment 1 replicates the
+sighted versus blindfold dissociation at large N: visible face information is
+associated with a small reliable tilt bias, while the blindfold control is
+flat. Experiment 2 does not provide evidence that swapping between a low- and
+a high-threat-rated male identity (ID015 vs ID017) produces a statistically
+reliable change in D, either in unpaired per-face tests or in a strictly paired
+within-subject comparison (N = 249). Together, these findings temper hypotheses
+that perceived threat simply scales the strength of the gaze-as-force illusion
+in this exact task. Alternative explanations---including limited power for
+subtle identity effects, heterogeneity across the two runs merged in the data,
+and sensitivity to angle-cutoff choices (explored in separate sensitivity
+figures)---should be acknowledged in the general discussion. The results are
+most conservatively read as: the core gaze-induced bias is robust when the face
+is visible versus obscured (Exp 1), but a coarse threat manipulation by face
+identity (Exp 2, ID015 vs ID017) does not produce a clear, statistically
+supported escalation of that bias under the present preprocessing and tests.
+
+================================================================================
+END OF DRAFT
+================================================================================

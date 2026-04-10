@@ -12,6 +12,8 @@ import os
 from typing import TYPE_CHECKING, List, Optional, Tuple, Any
 
 import matplotlib.pyplot as plt
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = ['Calibri', 'Arial', 'DejaVu Sans']
 import matplotlib.gridspec as gridspec
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from matplotlib.colors import TwoSlopeNorm
@@ -125,9 +127,9 @@ class DFigure:
         n_bars = len(bars)
         non_spacer = [(i, b) for i, b in enumerate(bars) if b is not None]
 
-        fig = plt.figure(figsize=(max(10, n_bars * 2 + 2), 6.5))
-        gs = gridspec.GridSpec(2, 1, height_ratios=[0.75, 1], hspace=0.01,
-                               left=0.08, right=0.97, top=0.87, bottom=0.18)
+        fig = plt.figure(figsize=(max(12, n_bars * 3.5 + 2), 9.5))
+        gs = gridspec.GridSpec(2, 1, height_ratios=[0.75, 1], hspace=0.15,
+                               left=0.10, right=0.95, top=0.85, bottom=0.28)
         ax_img = fig.add_subplot(gs[0])
         ax_bar = fig.add_subplot(gs[1])
         ax_img.set_axis_off()
@@ -149,7 +151,7 @@ class DFigure:
                 ax_img.add_artist(ab)
             # N label just below the face panel
             ax_img.text(i, 0.04, f'N={r["N"]}', ha='center', va='bottom',
-                        fontsize=8, color='#444',
+                        fontsize=26, color='black',
                         transform=ax_img.get_xaxis_transform())
 
         # Exp group labels and divider
@@ -170,17 +172,17 @@ class DFigure:
                                 linewidth=1.5, linestyle='--', zorder=0)
             ln.set_clip_on(False)
             ax_img.text(_bar_cx(1), 0.97, 'Exp 1: Eyes Open vs. Closed',
-                        ha='center', va='top', fontsize=10, fontweight='bold',
-                        transform=ax_img.transAxes, color='#333')
+                        ha='center', va='top', fontsize=26, fontweight='bold',
+                        transform=ax_img.transAxes, color='black')
             ax_img.text(_bar_cx(2), 0.97, 'Exp 2: Threat Level',
-                        ha='center', va='top', fontsize=10, fontweight='bold',
-                        transform=ax_img.transAxes, color='#333')
+                        ha='center', va='top', fontsize=26, fontweight='bold',
+                        transform=ax_img.transAxes, color='black')
         elif has_exp1:
             ax_img.text(0.5, 0.97, 'Exp 1: Eyes Open vs. Closed', ha='center', va='top',
-                        fontsize=10, fontweight='bold', transform=ax_img.transAxes, color='#333')
+                        fontsize=26, fontweight='bold', transform=ax_img.transAxes, color='black')
         elif has_exp2:
             ax_img.text(0.5, 0.97, 'Exp 2: Threat Level', ha='center', va='top',
-                        fontsize=10, fontweight='bold', transform=ax_img.transAxes, color='#333')
+                        fontsize=26, fontweight='bold', transform=ax_img.transAxes, color='black')
 
         # Bars
         for i, b in non_spacer:
@@ -190,9 +192,9 @@ class DFigure:
             ax_bar.errorbar(i, r['D'], yerr=r['SE'], capsize=5, color='black', linewidth=1.5)
             if r['p'] < 0.05:
                 ax_bar.text(i, r['D'] + r['SE'] + 0.015, '*',
-                            ha='center', va='bottom', fontsize=22, fontweight='bold')
-            ax_bar.text(i, -0.18, f"p={r['p']:.3f}",
-                        ha='center', va='top', fontsize=8, color='#555',
+                            ha='center', va='bottom', fontsize=48, fontweight='bold')
+            ax_bar.text(i, -0.32, f"p={r['p']:.3f}",
+                        ha='center', va='top', fontsize=30, color='black',
                         transform=ax_bar.get_xaxis_transform(),
                         clip_on=False)
 
@@ -201,10 +203,11 @@ class DFigure:
         # Flatten multi-line labels to single line for cleaner tick display
         ax_bar.set_xticklabels(
             [b['label'].replace('\n', ' ') for _, b in non_spacer],
-            fontsize=9,
+            fontsize=28,
         )
         ax_bar.set_xlim(-0.6, n_bars - 0.4)
-        ax_bar.set_ylabel('D (degrees)')
+        ax_bar.set_ylabel('D (degrees)', fontsize=28)
+        ax_bar.tick_params(labelsize=26)
         ax_bar.spines['top'].set_visible(False)
         ax_bar.spines['right'].set_visible(False)
 
@@ -217,7 +220,7 @@ class DFigure:
         fig.suptitle(
             f'D = mean(towards angle) − mean(away angle)\n'
             f'Angle cutoff {ANGLE_LO}°–{ANGLE_HI}° | t-test vs 0 | * p < .05 | Error bars = SE',
-            fontsize=11, y=0.97,
+            fontsize=30, y=0.98, color='#E84A30'
         )
         return fig
 
@@ -291,13 +294,13 @@ def sensitivity_heatmap(
     hi_ticks = hi[::hi_step]
     lo_ticks = lo[::lo_step]
 
-    fig = plt.figure(figsize=(16, 3.8 * n_rows))
-    gs = gridspec.GridSpec(n_rows, 3, hspace=0.55, wspace=0.18,
-                           left=0.07, right=0.93, top=0.94, bottom=0.08,
-                           width_ratios=[0.35, 1, 1])
+    fig = plt.figure(figsize=(28, 11.0 * n_rows))
+    gs = gridspec.GridSpec(n_rows, 3, hspace=1.0, wspace=0.4,
+                           left=0.03, right=0.91, top=0.90, bottom=0.12,
+                           width_ratios=[0.25, 1, 1])
 
     fig_title = title or 'Sensitivity Analysis — Angle Cutoff Sweep'
-    fig.suptitle(fig_title, fontsize=13, fontweight='bold', y=0.98)
+    fig.suptitle(fig_title, fontsize=52, fontweight='bold', y=0.98, color='#E84A30')
 
     d_axes, p_axes = [], []
     d_im = p_im = None
@@ -317,13 +320,18 @@ def sensitivity_heatmap(
         img_path = t.get('image_path')
         n_std = int(np.nanmax(g['N'])) if not np.all(np.isnan(g['N'])) else 0
         if img_path and os.path.exists(img_path):
-            ax_face.imshow(plt.imread(img_path))
-            ax_face.set_title(t['label'], fontsize=10, fontweight='bold', pad=4)
+            img = plt.imread(img_path)
+            ax_face.imshow(img)
+            h, w = img.shape[:2]
+            # Zoom in by setting limits past the transparent/white borders
+            ax_face.set_xlim(w * 0.15, w * 0.85)
+            ax_face.set_ylim(h * 0.90, h * 0.10)
+            ax_face.set_title(t['label'], fontsize=44, fontweight='bold', pad=25)
         else:
             ax_face.text(0.5, 0.5, t['label'], ha='center', va='center',
-                         fontsize=12, fontweight='bold', transform=ax_face.transAxes)
-        ax_face.text(0.5, -0.08, f'N={n_std}', ha='center', va='top',
-                     fontsize=9, color='#333', transform=ax_face.transAxes,
+                         fontsize=44, fontweight='bold', transform=ax_face.transAxes)
+        ax_face.text(0.5, -0.25, f'N={n_std}', ha='center', va='top',
+                     fontsize=40, color='#333', transform=ax_face.transAxes,
                      clip_on=False)
 
         # Col 1: Mean D heatmap
@@ -331,12 +339,12 @@ def sensitivity_heatmap(
         norm = TwoSlopeNorm(vcenter=0, vmin=-d_abs, vmax=d_abs)
         d_im = ax_d.imshow(d_data, origin='lower', aspect='auto', extent=ext,
                            cmap='RdBu_r', norm=norm, interpolation='none')
-        ax_d.set_xlabel('Max angle cutoff (<)', fontsize=9)
-        ax_d.set_ylabel('Min angle cutoff (>)', fontsize=9)
-        ax_d.set_title('Mean D (°)', fontsize=10, pad=4)
+        ax_d.set_xlabel('Max angle cutoff (<)', fontsize=38)
+        ax_d.set_ylabel('Min angle cutoff (>)', fontsize=38)
+        ax_d.set_title('Mean D (°)', fontsize=42, pad=25)
         ax_d.set_xticks(hi_ticks)
         ax_d.set_yticks(lo_ticks)
-        ax_d.tick_params(labelsize=8)
+        ax_d.tick_params(labelsize=40, pad=20, length=14, width=3.5)
         d_axes.append(ax_d)
 
         # Col 2: Significance heatmap
@@ -349,28 +357,34 @@ def sensitivity_heatmap(
                 np.linspace(hi[0], hi[-1], nH),
                 np.linspace(lo[0], lo[-1], nL),
                 log_p, levels=[-np.log10(0.05)],
-                colors='cyan', linewidths=1.5, linestyles='--',
+                colors='black', linewidths=2.0, linestyles='--',
             )
         except (ValueError, TypeError):
             pass
-        ax_p.set_xlabel('Max angle cutoff (<)', fontsize=9)
-        ax_p.set_ylabel('Min angle cutoff (>)', fontsize=9)
-        ax_p.set_title('Significance', fontsize=10, pad=4)
+        ax_p.set_xlabel('Max angle cutoff (<)', fontsize=38)
+        ax_p.set_ylabel('Min angle cutoff (>)', fontsize=38)
+        ax_p.set_title('Significance', fontsize=42, pad=25)
         ax_p.set_xticks(hi_ticks)
         ax_p.set_yticks(lo_ticks)
-        ax_p.tick_params(labelsize=8)
+        ax_p.tick_params(labelsize=40, pad=20, length=14, width=3.5)
         p_axes.append(ax_p)
 
     if d_im is not None:
-        fig.colorbar(d_im, ax=d_axes, shrink=0.7, pad=0.02, label='Mean D (degrees)')
+        cbar = fig.colorbar(d_im, ax=d_axes, shrink=0.7, pad=0.08)
+        cbar.set_label('Mean D (degrees)', fontsize=38)
+        cbar.ax.yaxis.set_label_position('left')
+        cbar.ax.tick_params(labelsize=48, length=16, width=4)
     if p_im is not None:
-        cb = fig.colorbar(p_im, ax=p_axes, shrink=0.7, pad=0.02, label=r'$-\log_{10}(p)$')
+        cb = fig.colorbar(p_im, ax=p_axes, shrink=0.7, pad=0.08)
+        cb.set_label(r'$-\log_{10}(p)$', fontsize=38)
+        cb.ax.yaxis.set_label_position('left')
+        cb.ax.tick_params(labelsize=48, length=16, width=4)
         p05_line = -np.log10(0.05)
         # Only draw the p=.05 marker if it falls within the colorbar range
         if p05_line <= logp_vmax:
-            cb.ax.axhline(p05_line, color='cyan', linewidth=1.5, linestyle='--')
-            cb.ax.text(0.5, p05_line, 'p=.05', va='center', ha='center', fontsize=8,
-                       color='cyan', transform=cb.ax.get_yaxis_transform())
+            cb.ax.axhline(p05_line, color='black', linewidth=2.0, linestyle='--')
+            cb.ax.text(-0.5, p05_line, 'p=.05', va='center', ha='right', fontsize=36,
+                       color='black', transform=cb.ax.get_yaxis_transform())
 
     if save:
         fig.savefig(save, dpi=150, bbox_inches='tight', facecolor='white')

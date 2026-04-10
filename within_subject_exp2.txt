@@ -1,0 +1,67 @@
+Figure: Within-Subject Re-Analysis - Experiment 2 (ID015 vs ID017)
+===================================================================
+
+FILE: within_subject_exp2.png
+
+OVERVIEW
+--------
+This figure tests threat-face effects using a within-subject design in Exp 2.
+Only ID015 (low threat) and ID017 (high threat) are included.
+
+PRIMARY MEASURE
+---------------
+D = mean(towards angle) - mean(away angle), computed per participant.
+
+TRIAL FILTERING AND BALANCING
+-----------------------------
+Valid trials satisfy:
+
+    3 deg < angle < 40 deg
+
+After validity marking, cascade balancing is applied so towards/away matched
+trials remain symmetric before participant-level D is computed.
+
+ANALYSES SHOWN
+--------------
+Panel A (between-subject reference):
+  One-sample t-tests of D vs 0, using all participants with data for each face.
+
+Panel B (within-subject primary analysis):
+  One-sample t-tests of D vs 0, restricted to participants with both faces.
+
+Panel C (threat modulation test):
+  Paired t-test on D_ID017 - D_ID015 within the same participants.
+  Histogram shows the participant-level paired differences.
+
+SAMPLE SIZES
+------------
+Within-subject paired sample:
+  N = 201 participants
+
+Between-subject reference sample:
+  ID015 N = 332
+  ID017 N = 208
+
+RESULTS (WITHIN-SUBJECT, PANEL B)
+---------------------------------
+ID015 (low threat):
+  D = -0.1885 deg, SE = 0.2170, t(200) = -0.866, p = 0.3873
+
+ID017 (high threat):
+  D = -0.0238 deg, SE = 0.2452, t(200) = -0.097, p = 0.9231
+
+Paired contrast (Panel C):
+  D_ID017 - D_ID015 = +0.1647 deg, SE = 0.2948
+  Within-subject SD = 4.1796
+  t(200) = +0.557, p = 0.5779
+
+STATISTICAL NOTE
+----------------
+All tests are two-tailed t-tests on participant-level D values.
+Error bars are standard error (SE). Asterisks denote p < .05.
+No multiple-comparison correction is applied in this figure.
+
+INTERPRETATION
+--------------
+Under the paired within-subject analysis (N = 201), neither face-specific D nor
+the high-minus-low paired difference is statistically different from zero.

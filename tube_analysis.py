@@ -7,9 +7,9 @@ Run:
 
 Output:
     Console: D results per condition (paste into LLMs)
-    figure_d_bars.png          — D bar chart (Exp1 + Exp2)
-    sensitivity_exp1.png       — angle cutoff sensitivity for Exp1
-    sensitivity_exp2.png       — angle cutoff sensitivity for Exp2
+    symposium/figure_d_bars.png          — D bar chart (Exp1 + Exp2)
+    symposium/sensitivity_exp1.png       — angle cutoff sensitivity for Exp1
+    symposium/sensitivity_exp2.png       — angle cutoff sensitivity for Exp2
 
 --- SELECTION CRITERIA (edit here) -------------------------------------------
 ANGLE_LO : trial kept if angle >  ANGLE_LO  (exclusive lower bound, degrees)
@@ -66,7 +66,8 @@ def main():
     # Sensitivity sweeps (before select_trials)
     e1 = s.select(exp_num=1)
     if len(e1) > 0:
-        out_s1 = os.path.join(ROOT, 'sensitivity_exp1.png')
+        out_s1 = os.path.join(ROOT, 'symposium', 'sensitivity_exp1.png')
+        os.makedirs(os.path.dirname(out_s1), exist_ok=True)
         sensitivity_heatmap(
             e1,
             save=out_s1,
@@ -75,7 +76,8 @@ def main():
 
     e2 = s.select(exp_num=2)
     if len(e2) > 0:
-        out_s2 = os.path.join(ROOT, 'sensitivity_exp2.png')
+        out_s2 = os.path.join(ROOT, 'symposium', 'sensitivity_exp2.png')
+        os.makedirs(os.path.dirname(out_s2), exist_ok=True)
         sensitivity_heatmap(
             e2,
             save=out_s2,
@@ -88,7 +90,8 @@ def main():
     print(f"\n{repr(s)}")
     s.print_summary()
 
-    out_d = os.path.join(ROOT, 'figure_d_bars.png')
+    out_d = os.path.join(ROOT, 'symposium', 'figure_d_bars.png')
+    os.makedirs(os.path.dirname(out_d), exist_ok=True)
     s.plots.plot_d(save=out_d)
 
     print("\nDone.")

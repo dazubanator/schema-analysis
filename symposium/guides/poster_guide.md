@@ -119,3 +119,8 @@ Our results reinforce the robustness of the gaze-force illusion while tempering 
 * **High-Intensity Social Cues**: Replace static identifiers with aggressive/threatening facial expressions to provide a more potent manipulation.
 * **Vulnerability Context**: Test if the threat effect only emerges when the physical object is in a more precarious state (e.g., taller or slimmer tubes).
 * **Per-Subject Predictive Modeling**: Use individual participant ratings of the faces as continuous regressors to account for subjective differences in threat perception.
+
+---
+
+## 📖 FAQ & Q&A
+For detailed explanations of the statistical figures (e.g., sensitivity heatmaps), see the [Figure Q&A Sheet](figure_qa.md).

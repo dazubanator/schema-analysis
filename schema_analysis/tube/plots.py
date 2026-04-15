@@ -127,9 +127,9 @@ class DFigure:
         n_bars = len(bars)
         non_spacer = [(i, b) for i, b in enumerate(bars) if b is not None]
 
-        fig = plt.figure(figsize=(max(12, n_bars * 3.5 + 2), 9.5))
+        fig = plt.figure(figsize=(max(12, n_bars * 3.5 + 2), 11.5))
         gs = gridspec.GridSpec(2, 1, height_ratios=[0.75, 1], hspace=0.15,
-                               left=0.10, right=0.95, top=0.85, bottom=0.28)
+                               left=0.10, right=0.95, top=0.78, bottom=0.25)
         ax_img = fig.add_subplot(gs[0])
         ax_bar = fig.add_subplot(gs[1])
         ax_img.set_axis_off()
@@ -217,11 +217,15 @@ class DFigure:
         ax_bar.set_ylim(-ylim, ylim)
 
         from .load import ANGLE_LO, ANGLE_HI
+        # Proper descriptive title (black, bold, large)
         fig.suptitle(
-            f'D = mean(towards angle) − mean(away angle)\n'
-            f'Angle cutoff {ANGLE_LO}°–{ANGLE_HI}° | t-test vs 0 | * p < .05 | Error bars = SE',
-            fontsize=30, y=0.98, color='#E84A30'
-        )
+            "Gaze-Force Test: Can gaze act like a physical push?",
+            fontsize=34, fontweight='bold', color='black', y=0.97)
+        # Methods/stats caption line (red, smaller, below title)
+        fig.text(0.5, 0.90,
+                 f'D = mean(towards angle) − mean(away angle)  |  '
+                 f'Angle cutoff {ANGLE_LO}°–{ANGLE_HI}°  |  t-test vs 0  |  * p < .05  |  Error bars = SE',
+                 ha='center', va='top', fontsize=26, color='#E84A30')
         return fig
 
 
@@ -294,13 +298,13 @@ def sensitivity_heatmap(
     hi_ticks = hi[::hi_step]
     lo_ticks = lo[::lo_step]
 
-    fig = plt.figure(figsize=(28, 11.0 * n_rows))
+    fig = plt.figure(figsize=(28, 12.0 * n_rows))
     gs = gridspec.GridSpec(n_rows, 3, hspace=1.0, wspace=0.4,
-                           left=0.03, right=0.91, top=0.90, bottom=0.12,
+                           left=0.03, right=0.91, top=0.85, bottom=0.12,
                            width_ratios=[0.25, 1, 1])
 
     fig_title = title or 'Sensitivity Analysis — Angle Cutoff Sweep'
-    fig.suptitle(fig_title, fontsize=52, fontweight='bold', y=0.98, color='#E84A30')
+    fig.suptitle(fig_title, fontsize=52, fontweight='bold', y=0.975, color='#E84A30')
 
     d_axes, p_axes = [], []
     d_im = p_im = None

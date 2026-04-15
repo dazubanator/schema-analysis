@@ -141,10 +141,21 @@ def jitter(n, width=0.18):
 
 # ── Figure layout ─────────────────────────────────────────────────────────────
 
-fig = plt.figure(figsize=(24, 11))
+fig = plt.figure(figsize=(24, 13))
 gs = gridspec.GridSpec(1, 3, width_ratios=[1.1, 1.2, 1.0],
-                       left=0.08, right=0.94, top=0.82, bottom=0.25,
+                       left=0.08, right=0.94, top=0.75, bottom=0.25,
                        wspace=0.52)
+
+# Simplified, human-reader title (black, bold, large)
+fig.suptitle(
+    "Social Threat Test: Does threat level change the gaze-push?",
+    fontsize=34, fontweight='bold', color='black', y=0.97)
+
+# Red caption (smaller, below title)
+fig.text(0.5, 0.90,
+         f'Unpaired Analysis of {resolve_treatment(LOW_FACE, False)["label"]} vs. '
+         f'{resolve_treatment(HIGH_FACE, False)["label"]} | Angle cutoff {ANGLE_LO}° - {ANGLE_HI}° | * p < 0.05',
+         ha='center', va='top', fontsize=26, color='#E84A30')
 
 COLORS = {fid: resolve_treatment(fid, False)['color'] for fid in faces}
 
@@ -169,7 +180,7 @@ for i, fid in enumerate(faces):
     ylim_vals.append(abs(r['D']) + r['SE'])
     add_face_image(ax_bar, fid, i)
 
-ylim = max(ylim_vals) + 0.25
+ylim = max(ylim_vals) + 0.07   # tight zoom — just enough for bars + SE + headroom
 ax_bar.set_ylim(-ylim, ylim)
 ax_bar.axhline(0, color='black', linewidth=0.8)
 ax_bar.set_xticks(range(len(faces)))
@@ -211,10 +222,7 @@ for i, fid in enumerate(faces):
     add_face_image(ax_strip, fid, i)
 
 ax_strip.axhline(0, color='black', linewidth=0.8)
-all_d = np.concatenate([group_stats[f]['raw'] for f in faces])
-strip_ylim = max(abs(all_d.min()), abs(all_d.max())) * 1.12
-strip_ylim = max(strip_ylim, 0.8)
-ax_strip.set_ylim(-strip_ylim, strip_ylim)
+ax_strip.set_ylim(-5, 5)  # Zoom to ±5° to show the dense cluster near zero
 ax_strip.set_xticks(range(len(faces)))
 ax_strip.set_xticklabels([resolve_treatment(f, False)['label'].replace('\n', ' ')
                             for f in faces], fontsize=28)
@@ -273,14 +281,7 @@ ax_diff.tick_params(labelsize=26)
 ax_diff.spines['top'].set_visible(False)
 ax_diff.spines['right'].set_visible(False)
 
-# ── Suptitle ──────────────────────────────────────────────────────────────────
-
-fig.suptitle(
-    f'Unpaired Analysis of {LOW_FACE} (low) vs. {HIGH_FACE} (high) | Angle cutoff {ANGLE_LO}° - {ANGLE_HI}° | * p < 0.05',
-    fontsize=45, y=0.98, color='#E84A30'
-)
-
 os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
 fig.savefig(OUT_PATH, dpi=200, bbox_inches='tight', facecolor='white')
-print(f"\nSaved → {OUT_PATH}")
+print(f"\nSaved -> {OUT_PATH}")
 plt.close()

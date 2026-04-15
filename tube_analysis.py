@@ -71,7 +71,7 @@ def main():
         sensitivity_heatmap(
             e1,
             save=out_s1,
-            title='Sensitivity Analysis — Exp 1 (ID008: Sighted vs Blindfold)',
+            title='Fluke Test: Are results consistent regardless of data filtering?',
         )
 
     e2 = s.select(exp_num=2)
@@ -81,7 +81,7 @@ def main():
         sensitivity_heatmap(
             e2,
             save=out_s2,
-            title='Sensitivity Analysis — Exp 2 (Threat Level: ID015 / ID017)',
+            title='Fluke Test: Are results consistent regardless of data filtering?',
         )
 
     # Main analysis — valid trials only, ID015 + ID017 paired

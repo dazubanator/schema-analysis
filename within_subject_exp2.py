@@ -145,10 +145,23 @@ for fid in faces:
 
 IMG_DIR = os.path.join(ROOT, 'data', 'tube', 'images')
 
-fig = plt.figure(figsize=(24, 11))
+fig = plt.figure(figsize=(24, 13))
 gs_top = gridspec.GridSpec(1, 3, width_ratios=[1.1, 1.1, 1.0],
-                            left=0.08, right=0.94, top=0.82, bottom=0.25,
+                            left=0.08, right=0.94, top=0.75, bottom=0.25,
                             wspace=0.50)
+
+# Simplified, human-reader title (black, bold, large)
+fig.suptitle(
+    "Social Threat Test: Does threat level change the gaze-push?",
+    fontsize=34, fontweight='bold', color='black', y=0.97)
+
+# Red caption (smaller, below title)
+fig.text(0.5, 0.90,
+         f'Paired Analysis of {resolve_treatment(LOW_FACE, False)["label"]} vs. '
+         f'{resolve_treatment(HIGH_FACE, False)["label"]} | Angle cutoff {ANGLE_LO}° - {ANGLE_HI}° | * p < 0.05',
+         ha='center', va='top', fontsize=26, color='#E84A30')
+
+rng = np.random.default_rng(42)
 
 
 def add_face_images(ax, face_ids, y_axes=0.86):
@@ -171,30 +184,8 @@ def add_face_images(ax, face_ids, y_axes=0.86):
             )
             ax.add_artist(ab)
 
-# ── Panel A: Between-subject (old) ──────────────────────────────────────────
-ax_old = fig.add_subplot(gs_top[0])
-for i, fid in enumerate(faces):
-    r = old_results[fid]
-    t_info = resolve_treatment(fid, False)
-    ax_old.bar(i, r['D'], 0.55, color=t_info['color'], edgecolor='black', linewidth=0.8, alpha=0.5)
-    ax_old.errorbar(i, r['D'], yerr=r['SE'], capsize=6, color='black', linewidth=1.5)
-    if r['p'] < .05:
-        ax_old.text(i, r['D'] + r['SE'] + 0.02, '*', ha='center', va='bottom', fontsize=48, fontweight='bold')
-    ax_old.text(i, -0.15, f"p={r['p']:.3f}\nN={r['N']}", ha='center', va='top', fontsize=30, color='black',
-                transform=ax_old.get_xaxis_transform(), clip_on=False)
-
-ax_old.axhline(0, color='black', linewidth=0.8)
-ax_old.set_xticks(range(len(faces)))
-ax_old.set_xticklabels([resolve_treatment(f, False)['label'].replace('\n', ' ') for f in faces], fontsize=28)
-ax_old.set_ylabel('D (degrees)', fontsize=28)
-ax_old.set_title('A. Between-subject\n(old analysis)', fontsize=32, fontweight='bold', pad=16)
-ax_old.tick_params(labelsize=26)
-ax_old.spines['top'].set_visible(False)
-ax_old.spines['right'].set_visible(False)
-add_face_images(ax_old, faces)
-
-# ── Panel B: Within-subject (new) ───────────────────────────────────────────
-ax_new = fig.add_subplot(gs_top[1])
+# ── Panel A: Within-subject mean D ± SE (paired participants only) ───────────
+ax_new = fig.add_subplot(gs_top[0])
 for i, fid in enumerate(faces):
     r = new_results[fid]
     t_info = resolve_treatment(fid, False)
@@ -204,31 +195,66 @@ for i, fid in enumerate(faces):
         ax_new.text(i, r['D'] + r['SE'] + 0.02, '*', ha='center', va='bottom', fontsize=48, fontweight='bold')
     ax_new.text(i, -0.15, f"p={r['p']:.3f}\nN={r['N']}", ha='center', va='top', fontsize=30, color='black',
                 transform=ax_new.get_xaxis_transform(), clip_on=False)
- 
+
 ax_new.axhline(0, color='black', linewidth=0.8)
 ax_new.set_xticks(range(len(faces)))
 ax_new.set_xticklabels([resolve_treatment(f, False)['label'].replace('\n', ' ') for f in faces], fontsize=28)
-ax_new.set_title('B. Within-subject\n(full sample cleanup)', fontsize=32, fontweight='bold', pad=16)
+ax_new.set_ylabel('D (degrees)', fontsize=28)
+ax_new.set_title('A. Within-subject mean D\n(paired participants only)', fontsize=32, fontweight='bold', pad=16)
 ax_new.tick_params(labelsize=26)
 ax_new.spines['top'].set_visible(False)
 ax_new.spines['right'].set_visible(False)
 add_face_images(ax_new, faces)
 
-# Match y-axes
-all_d = [old_results[f]['D'] for f in faces] + [new_results[f]['D'] for f in faces]
-all_se = [old_results[f]['SE'] for f in faces] + [new_results[f]['SE'] for f in faces]
-ylim = max(abs(d) + se for d, se in zip(all_d, all_se)) + 0.15
+all_d_vals = [new_results[f]['D'] for f in faces]
+all_se_vals = [new_results[f]['SE'] for f in faces]
+ylim = max(abs(d) + se for d, se in zip(all_d_vals, all_se_vals)) + 0.15
 ylim = max(ylim, abs(paired['D']) + paired['SE'] + 0.15)
-for ax in [ax_old, ax_new]:
-    ax.set_ylim(-ylim, ylim)
+ax_new.set_ylim(-ylim, ylim)
+
+# ── Panel B: Individual D distributions (jitter + diamond, paired only) ──────
+ax_strip = fig.add_subplot(gs_top[1])
+
+for i, fid in enumerate(faces):
+    r = new_results[fid]
+    t_info = resolve_treatment(fid, False)
+    c = t_info['color']
+    d_vals = ws_complete[f'D_{fid}'].values
+    x_jit = i + rng.uniform(-0.20, 0.20, size=len(d_vals))
+
+    ax_strip.scatter(x_jit, d_vals, s=12, color=c, alpha=0.35,
+                     linewidths=0, zorder=2)
+    # Median line
+    ax_strip.plot([i - 0.22, i + 0.22], [np.median(d_vals)] * 2,
+                  color='black', linewidth=2.0, zorder=4)
+    # Mean ± SE diamond
+    ax_strip.plot(i, r['D'], 'D', color=c, markeredgecolor='black',
+                  markersize=11, zorder=5)
+    ax_strip.plot([i, i], [r['D'] - r['SE'], r['D'] + r['SE']],
+                  color='black', linewidth=2.2, zorder=4)
+
+    ax_strip.text(i, -0.15,
+                  f"p = {r['p']:.3f}\nN = {r['N']}",
+                  ha='center', va='top', fontsize=30, color='black',
+                  transform=ax_strip.get_xaxis_transform(), clip_on=False)
+
+add_face_images(ax_strip, faces)
+ax_strip.axhline(0, color='black', linewidth=0.8)
+ax_strip.set_ylim(-5, 5)  # Zoom to ±5° to show the dense cluster near zero
+ax_strip.set_xticks(range(len(faces)))
+ax_strip.set_xticklabels([resolve_treatment(f, False)['label'].replace('\n', ' ') for f in faces], fontsize=28)
+ax_strip.set_ylabel('D per participant (degrees)', fontsize=28)
+ax_strip.set_title('B. Individual D distributions\n(Diamond = mean ± SE, — = median)', fontsize=32, fontweight='bold', pad=16)
+ax_strip.tick_params(labelsize=26)
+ax_strip.spines['top'].set_visible(False)
+ax_strip.spines['right'].set_visible(False)
 
 # ── Panel C: Paired difference + distribution ────────────────────────────────
 ax_paired = fig.add_subplot(gs_top[2])
 
-# Histogram of individual paired differences.
 ax_paired.hist(
     d_diff,
-    bins='fd',  # data-adaptive bin width (Freedman-Diaconis)
+    bins='fd',
     orientation='horizontal',
     color='#C06040',
     alpha=0.3,
@@ -236,7 +262,6 @@ ax_paired.hist(
     linewidth=0.5,
     density=True,
 )
-# Mean + SE bar
 ax_paired.axhline(0, color='black', linewidth=0.8)
 x_center = ax_paired.get_xlim()[1] * 0.5
 ax_paired.plot(x_center, paired['D'], 'D', color='#C06040', markersize=14, zorder=5)
@@ -251,14 +276,12 @@ ax_paired.plot([x_center - 0.01, x_center + 0.01],
                color='black', linewidth=2.5, zorder=4)
 
 ax_paired.set_title(f'C. Paired difference\n($D_{{{HIGH_FACE}}}$ − $D_{{{LOW_FACE}}}$)', fontsize=32, fontweight='bold')
-ax_paired.set_ylabel(f'D difference (degrees)', fontsize=28)
+ax_paired.set_ylabel('D difference (degrees)', fontsize=28)
 ax_paired.set_xlabel('Density', fontsize=28)
-# Use distribution-driven y-limits so the histogram is not visually collapsed.
 d_span = max(abs(np.nanmin(d_diff)), abs(np.nanmax(d_diff)))
 paired_ylim = max(d_span * 1.10, abs(paired['D']) + paired['SE'] + 0.5)
 ax_paired.set_ylim(-paired_ylim, paired_ylim)
 
-# Annotate
 txt = (f"Diff = {paired['D']:+.3f}° | p = {paired['p']:.3f}\n"
        f"t({paired['N']-1}) = {paired['t']:+.2f} | N = {paired['N']}")
 ax_paired.text(0.5, -0.14, txt, ha='center', va='top', fontsize=30, color='black',
@@ -268,11 +291,7 @@ ax_paired.tick_params(labelsize=26)
 ax_paired.spines['top'].set_visible(False)
 ax_paired.spines['right'].set_visible(False)
 
-# ── Suptitle ─────────────────────────────────────────────────────────────────
-fig.suptitle(
-    f'Paired Analysis of {LOW_FACE} (low) vs. {HIGH_FACE} (high) | Angle cutoff {ANGLE_LO}° - {ANGLE_HI}° | * p < 0.05',
-    fontsize=45, y=0.98, color='#E84A30'
-)
+
 
 out = os.path.join(ROOT, 'symposium', 'within_subject_exp2.png')
 os.makedirs(os.path.dirname(out), exist_ok=True)

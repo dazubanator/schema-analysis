@@ -415,8 +415,8 @@ def quarantine_workers(directory, max_sessions=1):
     with open(os.path.join(quarantined_dir, 'manifest.json'), 'w') as f:
         json.dump(manifest, f, indent=2)
 
-    print(f"  Quarantine: {n_quarantined} files from {len(quarantined_workers)} repeat workers → quarantined/")
-    print(f"  User data:  {n_userdata} files ({len(no_worker_files)} without workerId) → user-data/")
+    print(f"  Quarantine: {n_quarantined} files from {len(quarantined_workers)} repeat workers -> quarantined/")
+    print(f"  User data:  {n_userdata} files ({len(no_worker_files)} without workerId) -> user-data/")
 
     return manifest
 
